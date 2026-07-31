@@ -136,6 +136,98 @@ function remove(id) {
   }
 }
 
+// Transcript girdisinden düz metin çıkarır (arama ve dışa aktarma için).
+function entryText(entry) {
+  if (!entry) return '';
+  if (entry.kind === 'user') return String(entry.text || '');
+  const message = entry.message;
+  if (!message) return '';
+  if (message.type === 'result') return String(message.result || '');
+  const content = message.message && message.message.content;
+  if (!Array.isArray(content)) return '';
+  return content
+    .map((block) => {
+      if (!block) return '';
+      if (block.type === 'text') return block.text || '';
+      if (block.type === 'thinking') return block.thinking || '';
+      return '';
+    })
+    .filter(Boolean)
+    .join('\n');
+}
+
+// Başlık ve transcript içeriğinde düz metin araması yapar.
+function search(query, { limit = 50 } = {}) {
+  const needle = String(query || '').trim().toLowerCase();
+  if (!needle) return [];
+
+  const results = [];
+  for (const record of list()) {
+    const title = String(record.title || '');
+    let snippet = '';
+    let matched = title.toLowerCase().includes(needle);
+
+    if (!matched) {
+      for (const entry of readTranscript(record.id)) {
+        const text = entryText(entry);
+        const index = text.toLowerCase().indexOf(needle);
+        if (index === -1) continue;
+        matched = true;
+        const start = Math.max(0, index - 40);
+        snippet = `${start > 0 ? '…' : ''}${text.slice(start, index + needle.length + 60).replace(/\s+/g, ' ')}…`;
+        break;
+      }
+    }
+
+    if (matched) results.push({ id: record.id, snippet });
+    if (results.length >= limit) break;
+  }
+  return results;
+}
+
+function providerName(provider) {
+  return provider === 'codex' ? 'Codex' : 'Claude';
+}
+
+// Konuşmayı Markdown'a çevirir.
+function toMarkdown(id) {
+  const data = load(id);
+  if (!data) return null;
+  const { meta, transcript } = data;
+  const lines = [
+    `# ${meta.title || 'Konuşma'}`,
+    '',
+    `- Dizin: \`${meta.cwd || ''}\``,
+    `- Oluşturulma: ${new Date(meta.createdAt).toLocaleString('tr-TR')}`,
+    `- Güncelleme: ${new Date(meta.updatedAt).toLocaleString('tr-TR')}`,
+    '',
+  ];
+
+  for (const entry of transcript) {
+    if (entry.kind === 'user') {
+      lines.push(`## Sen (${providerName(entry.provider)})`, '', String(entry.text || ''), '');
+      continue;
+    }
+    const message = entry.message;
+    if (!message) continue;
+
+    if (message.type === 'assistant') {
+      const content = (message.message && message.message.content) || [];
+      for (const block of Array.isArray(content) ? content : []) {
+        if (block.type === 'text' && block.text) {
+          lines.push(`## Asistan (${providerName(entry.provider)})`, '', block.text, '');
+        } else if (block.type === 'tool_use') {
+          lines.push(`### Araç: ${block.name}`, '', '```json', JSON.stringify(block.input, null, 2), '```', '');
+        }
+      }
+    } else if (message.type === 'result' && message.result) {
+      lines.push('### Sonuç', '', String(message.result), '');
+    }
+  }
+
+  return { meta, markdown: lines.join('\n') };
+}
+
 function titleFromPrompt(prompt) {
   const oneLine = String(prompt).replace(/\s+/g, ' ').trim();
   return oneLine.length > 60 ? `${oneLine.slice(0, 57)}...` : oneLine || 'Yeni Konuşma';
@@ -151,5 +243,7 @@ module.exports = {
   appendEntry,
   load,
   remove,
+  search,
+  toMarkdown,
   titleFromPrompt,
 };

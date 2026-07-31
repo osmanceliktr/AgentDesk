@@ -1,5 +1,6 @@
 'use strict';
 
+const fs = require('fs');
 const { dialog, BrowserWindow } = require('electron');
 
 // Agent'ın çalışacağı proje dizinini seçtirir.
@@ -16,4 +17,17 @@ async function selectDirectory() {
   return result.filePaths[0];
 }
 
-module.exports = { selectDirectory };
+// Metni kullanıcının seçtiği dosyaya yazar. İptal edilirse { canceled: true } döner.
+async function saveTextFile({ title, defaultPath, content, filters }) {
+  const win = BrowserWindow.getFocusedWindow();
+  const result = await dialog.showSaveDialog(win, {
+    title: title || 'Kaydet',
+    defaultPath,
+    filters: filters || [{ name: 'Markdown', extensions: ['md'] }],
+  });
+  if (result.canceled || !result.filePath) return { canceled: true };
+  fs.writeFileSync(result.filePath, content, 'utf8');
+  return { canceled: false, path: result.filePath };
+}
+
+module.exports = { selectDirectory, saveTextFile };

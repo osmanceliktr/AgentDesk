@@ -70,14 +70,32 @@ body {
   text-align: left;
 }
 
-.conv-list {
-  flex: 1;
-  overflow-y: auto;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  margin: 0 -6px;
-  padding: 0 6px;
+.conv-search {
+  width: 100%;
+  margin-bottom: 8px;
+  background: var(--bg);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 6px 9px;
+  font-family: inherit;
+  font-size: 12px;
+}
+
+.conv-search:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.conv-item-snippet {
+  display: block;
+  width: 100%;
+  color: var(--text-dim);
+  font-size: 11px;
+  line-height: 1.3;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .conv-item {
@@ -103,6 +121,24 @@ body {
   background: var(--bg-elev);
   color: var(--text);
   box-shadow: inset 3px 0 0 var(--accent);
+}
+
+/* Kaydedilmemiş yeni sohbet yer tutucusu */
+.conv-item-draft {
+  cursor: default;
+  font-style: italic;
+  opacity: 0.85;
+}
+
+.conv-item-draft::after {
+  content: 'taslak';
+  margin-left: auto;
+  padding: 1px 6px;
+  border-radius: 999px;
+  border: 1px dashed var(--border);
+  font-size: 10px;
+  font-style: normal;
+  color: var(--text-dim);
 }
 
 .conv-item-title {
@@ -192,6 +228,37 @@ body {
   font-weight: 600;
 }
 
+/* Konuşma başına token/maliyet özeti */
+.turn-stats {
+  color: var(--text-dim);
+  font-size: 11px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 620px;
+}
+
+/* "Limitler" düğmesindeki kalan kota rozeti */
+.usage-badge {
+  margin-left: 7px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: rgba(91, 141, 239, 0.18);
+  color: #9dbcff;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.usage-badge.warn {
+  background: rgba(224, 165, 60, 0.18);
+  color: #e6b964;
+}
+
+.usage-badge.critical {
+  background: rgba(224, 96, 96, 0.2);
+  color: #f08c8c;
+}
+
 /* --- Butonlar --- */
 .btn {
   background: var(--bg-elev);
@@ -238,14 +305,20 @@ body {
   padding: 8px 10px;
 }
 
-.topbar-select {
+.btn-mono {
+  font-family: "Cascadia Code", "Consolas", monospace;
+  font-weight: 700;
+  letter-spacing: -1px;
+}
+
+.ctl-select {
   background: var(--bg-elev);
   color: var(--text);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  padding: 7px 10px;
+  padding: 6px 9px;
   font-family: inherit;
-  font-size: 13px;
+  font-size: 12px;
   min-width: 92px;
   max-width: 220px;
 }
@@ -258,7 +331,7 @@ body {
   min-width: 92px;
 }
 
-.topbar-select:disabled {
+.ctl-select:disabled {
   opacity: 0.45;
 }
 
@@ -279,6 +352,7 @@ body {
 }
 
 .msg {
+  position: relative;
   padding: 10px 14px;
   border-radius: var(--radius);
   border: 1px solid var(--border);
@@ -286,6 +360,38 @@ body {
   line-height: 1.42;
   word-wrap: break-word;
   animation: fade 0.15s ease;
+}
+
+/* Mesaj üzerine gelince beliren kopyala / yeniden gönder düğmeleri */
+.msg-actions {
+  position: absolute;
+  top: 6px;
+  right: 8px;
+  display: flex;
+  gap: 4px;
+  opacity: 0;
+  transition: opacity 0.12s ease;
+}
+
+.msg:hover .msg-actions,
+.msg-actions:focus-within {
+  opacity: 1;
+}
+
+.msg-action {
+  background: var(--bg);
+  color: var(--text-dim);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  padding: 2px 7px;
+  font-family: inherit;
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.msg-action:hover {
+  color: var(--text);
+  border-color: var(--accent);
 }
 
 @keyframes fade {
@@ -393,6 +499,28 @@ body {
   line-height: 1.42;
 }
 
+/* Akış sürerken düz metin gösterilir; tur bitince markdown'a çevrilir. */
+.msg-body.streaming {
+  white-space: pre-wrap;
+}
+
+.msg-body.streaming::after {
+  content: '';
+  display: inline-block;
+  width: 7px;
+  height: 13px;
+  margin-left: 2px;
+  vertical-align: text-bottom;
+  background: var(--text-dim);
+  animation: caret-blink 1s steps(2, start) infinite;
+}
+
+@keyframes caret-blink {
+  to {
+    visibility: hidden;
+  }
+}
+
 .msg-body > :first-child {
   margin-top: 0;
 }
@@ -478,7 +606,21 @@ body {
 #composer {
   border-top: 1px solid var(--border);
   background: var(--bg-alt);
-  padding: 12px 14px;
+  padding: 10px 14px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* Çalıştırma ayarları composer'ın üstünde: bir sonraki gönderimi belirler. */
+.composer-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.composer-main {
   display: flex;
   gap: 12px;
   align-items: flex-end;
@@ -575,6 +717,27 @@ body {
   border-color: var(--accent);
 }
 
+.field-check {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.field-check input[type='checkbox'] {
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  padding: 0;
+  flex: 0 0 auto;
+  accent-color: var(--accent);
+}
+
+.field-check > span {
+  margin-bottom: 0;
+  color: var(--text);
+  font-size: 14px;
+}
+
 .hint {
   display: block;
   margin-top: 5px;
@@ -613,6 +776,53 @@ body {
   word-break: break-word;
 }
 
+.perm-detail {
+  margin-bottom: 10px;
+}
+
+.perm-detail-label {
+  font-size: 12px;
+  color: var(--text-dim);
+  margin-bottom: 6px;
+  word-break: break-all;
+}
+
+.perm-command,
+.perm-diff {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 9px 10px;
+  margin: 0 0 8px;
+  max-height: 240px;
+  overflow: auto;
+  font-family: "Cascadia Code", "Consolas", monospace;
+  font-size: 12px;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.diff-line {
+  white-space: pre-wrap;
+  word-break: break-word;
+  padding: 0 3px;
+  border-radius: 3px;
+}
+
+.diff-add {
+  background: rgba(80, 200, 120, 0.14);
+  color: #7ee2a8;
+}
+
+.diff-del {
+  background: rgba(224, 96, 96, 0.14);
+  color: #f0a0a0;
+}
+
+#input.drag-over {
+  border-color: var(--accent);
+  background: rgba(91, 141, 239, 0.08);
+}
 
 .msg-body .md-code {
   margin: 6px 0;
@@ -634,12 +844,7 @@ body {
   min-height: 0;
 }
 
-.project-section {
-  flex: 0 0 auto;
-  max-height: 34%;
-}
-
-.conversations-section {
+.tree-section {
   flex: 1;
 }
 
@@ -678,12 +883,65 @@ body {
 }
 
 .project-list {
+  flex: 1;
   overflow-y: auto;
   display: flex;
   flex-direction: column;
   gap: 2px;
   margin: 0 -6px;
   padding: 0 6px;
+}
+
+/* Proje + altındaki sohbetler tek grup */
+.project-group {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-bottom: 6px;
+}
+
+.project-caret {
+  flex-shrink: 0;
+  width: 10px;
+  color: var(--text-dim);
+  font-size: 10px;
+  line-height: 1;
+}
+
+.project-count {
+  flex-shrink: 0;
+  min-width: 18px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.07);
+  color: var(--text-dim);
+  font-size: 10px;
+  line-height: 16px;
+  text-align: center;
+}
+
+.project-item:hover .project-count {
+  display: none;
+}
+
+.project-item-orphan {
+  cursor: default;
+  font-style: italic;
+}
+
+/* Sohbetler proje başlığının altında girintili durur */
+.project-convs {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-left: 10px;
+  padding-left: 8px;
+  border-left: 1px solid var(--border);
+}
+
+.conv-empty-nested {
+  padding: 4px 8px;
+  font-size: 11px;
 }
 
 .project-item {
@@ -867,6 +1125,126 @@ body {
   margin-top: 5px;
   color: var(--text-dim);
   font-size: 11px;
+}
+
+/* --- Proje bazlı maliyet ekranı --- */
+.stats-content {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 14px;
+}
+
+.stats-project {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: rgba(0, 0, 0, 0.12);
+  padding: 12px;
+  min-width: 0;
+}
+
+.stats-project-head {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: start;
+  margin-bottom: 8px;
+}
+
+.stats-project-title {
+  min-width: 0;
+}
+
+.stats-project-title h3 {
+  margin: 0;
+  font-size: 15px;
+}
+
+.stats-project-path {
+  display: block;
+  color: var(--text-dim);
+  font-family: "Cascadia Code", "Consolas", monospace;
+  font-size: 11px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.stats-project-cost {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--green);
+  white-space: nowrap;
+}
+
+.stats-tag {
+  margin-left: 8px;
+  padding: 2px 7px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+  font-size: 10px;
+  font-weight: 500;
+  text-transform: uppercase;
+  vertical-align: middle;
+}
+
+.stats-row {
+  display: grid;
+  grid-template-columns: minmax(0, auto) minmax(0, 1fr);
+  gap: 12px;
+  padding: 5px 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  font-size: 12px;
+}
+
+.stats-row span:last-child {
+  color: var(--text-dim);
+  text-align: right;
+}
+
+.stats-row.muted span:first-child {
+  color: var(--text-dim);
+}
+
+.stats-table {
+  width: 100%;
+  margin-top: 8px;
+  border-collapse: collapse;
+  font-size: 11px;
+}
+
+.stats-table th {
+  text-align: right;
+  color: var(--text-dim);
+  font-weight: 600;
+  padding: 4px 6px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.stats-table th:first-child,
+.stats-table td:first-child {
+  text-align: left;
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.stats-table td {
+  text-align: right;
+  padding: 4px 6px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.stats-details {
+  margin-top: 8px;
+}
+
+.stats-details summary {
+  cursor: pointer;
+  color: var(--text-dim);
+  font-size: 12px;
 }
 
 .usage-empty,

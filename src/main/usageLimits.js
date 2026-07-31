@@ -7,12 +7,12 @@
 // çalışan oturumlarda plan limiti kavramı yoktur.
 
 const fs = require('fs');
-const os = require('os');
 const path = require('path');
 const { spawn } = require('child_process');
 
 const store = require('./store');
-const { buildClaudeEnv, buildCodexEnv } = require('./providerEnv');
+const { buildCodexEnv } = require('./providerEnv');
+const { withIdleClaudeSession } = require('./claudeSession');
 
 const CLAUDE_TIMEOUT_MS = 30000;
 const CODEX_TIMEOUT_MS = 20000;
@@ -49,30 +49,6 @@ function makeWindow(key, label, usedPercent, resetsAtMs) {
     remainingPercent: used === null ? null : 100 - used,
     resetsAt: typeof resetsAtMs === 'number' && Number.isFinite(resetsAtMs) ? resetsAtMs : null,
   };
-}
-
-function withTimeout(promise, ms, message) {
-  let timer = null;
-  const timeout = new Promise((_, reject) => {
-    timer = setTimeout(() => reject(new Error(message)), ms);
-  });
-  return Promise.race([promise, timeout]).finally(() => {
-    if (timer) clearTimeout(timer);
-  });
-}
-
-function pickCwd() {
-  const settings = store.getSettings();
-  const candidates = [settings.lastDirectory, process.cwd(), os.homedir()];
-  for (const candidate of candidates) {
-    if (typeof candidate !== 'string' || !candidate.trim()) continue;
-    try {
-      if (fs.statSync(candidate).isDirectory()) return candidate;
-    } catch {
-      // sıradaki adaya geç
-    }
-  }
-  return os.homedir();
 }
 
 // --- Claude ---
@@ -123,55 +99,16 @@ function claudeNotes(usage) {
 
 async function readClaudeUsage() {
   const apiKey = store.getApiKey();
-  let release = () => {};
-  const idle = new Promise((resolve) => {
-    release = resolve;
-  });
-
-  async function* idlePrompt() {
-    // Hiç mesaj göndermeyen akış: oturum açılır, sadece kontrol isteği çalışır.
-    await idle;
-  }
-
-  const abortController = new AbortController();
 
   try {
-    const { query } = await import('@anthropic-ai/claude-agent-sdk');
-    const q = query({
-      prompt: idlePrompt(),
-      options: {
-        cwd: pickCwd(),
-        permissionMode: 'plan',
-        maxTurns: 1,
-        allowedTools: [],
-        abortController,
-        includePartialMessages: false,
-        executable: process.execPath,
-        executableArgs: [],
-        env: buildClaudeEnv(apiKey),
-        stderr: (data) => console.error('[usage:claude stderr]', String(data).trim()),
-      },
-    });
-
-    // Akışı boşalt: mesaj beklemiyoruz ama iterator'ın hatası yakalanmalı.
-    const drain = (async () => {
-      try {
-        for await (const _message of q) {
-          void _message;
-        }
-      } catch {
-        // oturum kapatılırken oluşan hatalar limit sorgusunu etkilemez
+    const usage = await withIdleClaudeSession(
+      (q) => q.usage_EXPERIMENTAL_MAY_CHANGE_DO_NOT_RELY_ON_THIS_API_YET(),
+      {
+        timeoutMs: CLAUDE_TIMEOUT_MS,
+        timeoutMessage: 'Claude limit sorgusu zaman aşımına uğradı.',
+        label: 'usage:claude',
       }
-    })();
-
-    const usage = await withTimeout(
-      q.usage_EXPERIMENTAL_MAY_CHANGE_DO_NOT_RELY_ON_THIS_API_YET(),
-      CLAUDE_TIMEOUT_MS,
-      'Claude limit sorgusu zaman aşımına uğradı.'
     );
-
-    release();
-    drain.catch(() => {});
 
     const windows = usage.rate_limits_available ? claudeWindowsFromRateLimits(usage.rate_limits) : [];
     const plan = usage.subscription_type || null;
@@ -204,13 +141,6 @@ async function readClaudeUsage() {
       notes: [],
       error: normalizeClaudeError(err),
     };
-  } finally {
-    release();
-    try {
-      abortController.abort();
-    } catch {
-      // yoksay
-    }
   }
 }
 

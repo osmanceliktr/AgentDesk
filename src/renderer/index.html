@@ -12,19 +12,21 @@
   <body>
     <div id="app-shell">
       <aside id="sidebar">
-        <section class="sidebar-section project-section">
-          <div class="sidebar-heading">
-            <span>Projeler</span>
-            <button id="btn-add-project" class="sidebar-action" title="Proje ekle">+</button>
-          </div>
-          <div id="project-list" class="project-list"></div>
-        </section>
-
         <button id="btn-new-chat" class="btn btn-primary btn-new-chat">+ Yeni Konu&#351;ma</button>
 
-        <section class="sidebar-section conversations-section">
-          <div class="sidebar-heading"><span>Konu&#351;malar</span></div>
-          <div id="conv-list" class="conv-list"></div>
+        <section class="sidebar-section tree-section">
+          <div class="sidebar-heading">
+            <span>Projeler ve sohbetler</span>
+            <button id="btn-add-project" class="sidebar-action" title="Proje ekle">+</button>
+          </div>
+          <input
+            id="conv-search"
+            class="conv-search"
+            type="search"
+            placeholder="T&#252;m sohbetlerde ara (Ctrl+K)"
+            autocomplete="off"
+          />
+          <div id="project-list" class="project-list"></div>
         </section>
       </aside>
 
@@ -34,21 +36,16 @@
             <div class="project-context">
               <span id="project-name" class="project-name">Proje se&#231;ilmedi</span>
               <span id="project-path" class="dir-path" title="">Sol panelden proje ekleyin</span>
+              <span id="turn-stats" class="turn-stats hidden"></span>
             </div>
           </div>
           <div class="topbar-right">
-            <select id="provider-select" class="topbar-select provider-select" title="Agent sa&#287;lay&#305;c&#305;s&#305;">
-              <option value="claude">Claude</option>
-              <option value="codex">Codex</option>
-            </select>
-            <select id="inline-model-select" class="topbar-select model-select" title="Model"></select>
-            <select id="mode-select" class="topbar-select mode-select" title="&#304;zin modu">
-              <option value="plan">Plan</option>
-              <option value="default">Onayl&#305;</option>
-              <option value="acceptEdits">Auto</option>
-              <option value="bypassPermissions">Bypass</option>
-            </select>
-            <button id="btn-usage" class="btn" title="Kullan&#305;m limitleri">Limitler</button>
+            <button id="btn-terminal" class="btn btn-icon btn-mono" title="Se&#231;ili dizinde komut istemi (cmd) a&#231;">&gt;_</button>
+            <button id="btn-export" class="btn btn-icon" title="Konu&#351;may&#305; Markdown olarak d&#305;&#351;a aktar">&#8681;</button>
+            <button id="btn-stats" class="btn" title="Proje baz&#305;nda token ve maliyet">Maliyet</button>
+            <button id="btn-usage" class="btn" title="Kullan&#305;m limitleri">
+              Limitler<span id="usage-badge" class="usage-badge hidden"></span>
+            </button>
             <button id="btn-settings" class="btn btn-icon" title="Ayarlar">&#9881;</button>
           </div>
         </header>
@@ -56,14 +53,31 @@
         <main id="messages"></main>
 
         <footer id="composer">
-          <textarea
-            id="input"
-            rows="3"
-            placeholder="Komutunuzu yaz&#305;n (Ctrl+Enter ile g&#246;nderin)..."
-          ></textarea>
-          <div class="composer-buttons">
-            <button id="btn-send" class="btn btn-primary" disabled>G&#246;nder</button>
-            <button id="btn-cancel" class="btn btn-danger" disabled>&#304;ptal</button>
+          <div class="composer-controls">
+            <select id="provider-select" class="ctl-select provider-select" title="Agent sa&#287;lay&#305;c&#305;s&#305;">
+              <option value="claude">Claude</option>
+              <option value="codex">Codex</option>
+            </select>
+            <select id="inline-model-select" class="ctl-select model-select" title="Model"></select>
+            <select id="effort-select" class="ctl-select effort-select" title="Ak&#305;l y&#252;r&#252;tme eforu"></select>
+            <select id="mode-select" class="ctl-select mode-select" title="&#304;zin modu">
+              <option value="plan">Plan</option>
+              <option value="default">Onayl&#305;</option>
+              <option value="acceptEdits">Auto</option>
+              <option value="bypassPermissions">Bypass</option>
+            </select>
+          </div>
+
+          <div class="composer-main">
+            <textarea
+              id="input"
+              rows="3"
+              placeholder="Komutunuzu yaz&#305;n (Ctrl+Enter ile g&#246;nderin)..."
+            ></textarea>
+            <div class="composer-buttons">
+              <button id="btn-send" class="btn btn-primary" disabled>G&#246;nder</button>
+              <button id="btn-cancel" class="btn btn-danger" disabled>&#304;ptal</button>
+            </div>
           </div>
         </footer>
       </div>
@@ -96,35 +110,29 @@
 
         <label class="field">
           <span>Claude Modeli</span>
-          <select id="set-model">
-            <optgroup label="En yetenekli">
-              <option value="claude-fable-5">Claude Fable 5</option>
-            </optgroup>
-            <optgroup label="Opus">
-              <option value="claude-opus-5">Claude Opus 5</option>
-              <option value="claude-opus-4-8">Claude Opus 4.8</option>
-              <option value="claude-opus-4-7">Claude Opus 4.7</option>
-              <option value="claude-opus-4-6">Claude Opus 4.6</option>
-              <option value="claude-opus-4-5">Claude Opus 4.5</option>
-            </optgroup>
-            <optgroup label="Sonnet">
-              <option value="claude-sonnet-5">Claude Sonnet 5</option>
-              <option value="claude-sonnet-4-6">Claude Sonnet 4.6</option>
-              <option value="claude-sonnet-4-5">Claude Sonnet 4.5</option>
-            </optgroup>
-            <optgroup label="Haiku">
-              <option value="claude-haiku-4-5">Claude Haiku 4.5</option>
-            </optgroup>
-            <optgroup label="&#214;zel eri&#351;im">
-              <option value="claude-mythos-5">Claude Mythos 5</option>
-            </optgroup>
-          </select>
+          <select id="set-model"></select>
+        </label>
+
+        <label class="field">
+          <span>Claude Eforu</span>
+          <select id="set-effort"></select>
+          <small class="hint">Ak&#305;l y&#252;r&#252;tme derinli&#287;i. Y&#252;ksek efor daha iyi sonu&#231; verir ama daha yava&#351;t&#305;r ve kotay&#305; daha h&#305;zl&#305; t&#252;ketir. Model desteklemiyorsa alt seviyeye d&#252;&#351;er.</small>
         </label>
 
         <label class="field">
           <span>Codex Modeli &mdash; opsiyonel</span>
           <select id="set-codex-model"></select>
           <small class="hint">Codex yerel CLI/ChatGPT oturumunu kullan&#305;r. Gerekirse terminalde codex login &#231;al&#305;&#351;t&#305;r&#305;n.</small>
+        </label>
+
+        <label class="field">
+          <span>Codex Eforu</span>
+          <select id="set-codex-effort"></select>
+        </label>
+
+        <label class="field field-check">
+          <input id="set-send-on-enter" type="checkbox" />
+          <span>Enter ile g&#246;nder (Shift+Enter sat&#305;r atlar)</span>
         </label>
 
         <label class="field">
@@ -159,13 +167,30 @@
       </div>
     </div>
 
+    <div id="stats-overlay" class="overlay hidden">
+      <div class="panel panel-wide">
+        <h2>Proje Baz&#305;nda Token ve Maliyet</h2>
+        <p id="stats-status" class="hint"></p>
+        <div id="stats-content" class="stats-content"></div>
+        <div class="panel-buttons">
+          <button id="btn-stats-refresh" class="btn">Yenile</button>
+          <span class="spacer"></span>
+          <button id="btn-stats-close" class="btn btn-primary">Kapat</button>
+        </div>
+      </div>
+    </div>
+
     <div id="perm-overlay" class="overlay hidden">
       <div class="panel">
         <h2>Ara&#231; Kullan&#305;m Onay&#305;</h2>
         <p>Agent bir ara&#231; kullanmak istiyor:</p>
         <div class="perm-tool" id="perm-tool"></div>
+        <div class="perm-detail" id="perm-detail"></div>
         <pre class="perm-input" id="perm-input"></pre>
         <div class="panel-buttons">
+          <button id="btn-perm-allow-session" class="btn" title="Bu ara&#231; i&#231;in uygulama kapanana kadar tekrar sorulmaz">
+            Bu oturumda hep izin ver
+          </button>
           <span class="spacer"></span>
           <button id="btn-perm-deny" class="btn btn-danger">Reddet</button>
           <button id="btn-perm-allow" class="btn btn-primary">&#304;zin Ver</button>

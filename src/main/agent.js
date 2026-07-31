@@ -36,18 +36,54 @@ function stringify(value) {
   }
 }
 
-function normalizeClaudeMessage(message) {
+function normalizeClaudeMessage(message, effort) {
   if (!message || typeof message !== 'object') return message;
-  return { ...message, provider: 'claude' };
+  const normalized = { ...message, provider: 'claude' };
+  if (normalized.type === 'system' && normalized.subtype === 'init' && effort) {
+    normalized.effort = effort;
+  }
+  return normalized;
 }
 
-function makeSystemInit({ provider, model, permissionMode, cwd, sessionId, threadId }) {
+// Renderer'ın gördüğü tek akış sözleşmesi. Claude parça parça (append),
+// Codex ise o ana kadarki tam metni (replace) gönderir.
+function makeDelta({ provider, streamId, kind, text, replace = false, done = false }) {
+  return { type: 'assistant_delta', provider, streamId, kind, text: text || '', replace, done };
+}
+
+// Claude SDK stream_event mesajını delta sözleşmesine çevirir.
+function claudeStreamDelta(message) {
+  const event = message && message.event;
+  if (!event) return null;
+  const index = typeof event.index === 'number' ? event.index : 0;
+  const streamId = `${message.session_id || 'claude'}:${message.parent_tool_use_id || 'main'}:${index}`;
+
+  if (event.type === 'content_block_delta') {
+    const delta = event.delta || {};
+    if (delta.type === 'text_delta' && delta.text) {
+      return makeDelta({ provider: 'claude', streamId, kind: 'text', text: delta.text });
+    }
+    if (delta.type === 'thinking_delta' && delta.thinking) {
+      return makeDelta({ provider: 'claude', streamId, kind: 'thinking', text: delta.thinking });
+    }
+    return null;
+  }
+
+  if (event.type === 'content_block_stop') {
+    return makeDelta({ provider: 'claude', streamId, kind: null, done: true });
+  }
+
+  return null;
+}
+
+function makeSystemInit({ provider, model, permissionMode, effort, cwd, sessionId, threadId }) {
   return {
     type: 'system',
     subtype: 'init',
     provider,
     model,
     permissionMode,
+    effort,
     cwd,
     session_id: sessionId,
     thread_id: threadId,
@@ -96,6 +132,22 @@ function makeResult({ provider, ok, result, durationMs, usage }) {
     duration_ms: durationMs,
     usage,
   };
+}
+
+// Codex metin/akıl yürütme öğeleri akarken güncellenir: started/updated → delta,
+// completed → hem son delta hem tam mesaj (transcript'e tam mesaj yazılır).
+function codexStreamDelta(item, phase) {
+  if (!item || !item.id) return null;
+  const kind = item.type === 'agent_message' ? 'text' : item.type === 'reasoning' ? 'thinking' : null;
+  if (!kind) return null;
+  return makeDelta({
+    provider: 'codex',
+    streamId: `codex:${item.id}`,
+    kind,
+    text: item.text || '',
+    replace: true,
+    done: phase === 'completed',
+  });
 }
 
 function normalizeCodexItem(item, phase) {
@@ -174,15 +226,17 @@ async function runClaude({ prompt, cwd, resumeSessionId, bridgeContext, onMessag
     }
   };
 
+  const effort = settings.effort || undefined;
   const options = {
     cwd,
     model: settings.model || 'claude-opus-4-5',
     permissionMode: settings.permissionMode || 'plan',
     maxTurns: Number(settings.maxTurns) || 10,
     allowedTools: settings.allowedTools,
+    ...(effort ? { effort } : {}),
     canUseTool,
     abortController,
-    includePartialMessages: false,
+    includePartialMessages: true,
     ...(resumeSessionId ? { resume: resumeSessionId } : {}),
     executable: process.execPath,
     executableArgs: [],
@@ -194,7 +248,12 @@ async function runClaude({ prompt, cwd, resumeSessionId, bridgeContext, onMessag
   activeQuery = q;
 
   for await (const message of q) {
-    onMessage(normalizeClaudeMessage(message));
+    if (message && message.type === 'stream_event') {
+      const delta = claudeStreamDelta(message);
+      if (delta) onMessage(delta);
+      continue;
+    }
+    onMessage(normalizeClaudeMessage(message, effort));
   }
 }
 
@@ -206,10 +265,12 @@ async function runCodex({ prompt, cwd, resumeThreadId, bridgeContext, onMessage 
 
   const permission = mapCodexPermissions(settings.permissionMode || 'plan');
   const model = (settings.codexModel || '').trim() || undefined;
+  const effort = (settings.codexEffort || '').trim() || undefined;
   const codex = new Codex({ env: buildCodexEnv() });
   const threadOptions = {
     ...permission,
     ...(model ? { model } : {}),
+    ...(effort ? { modelReasoningEffort: effort } : {}),
     workingDirectory: cwd,
     skipGitRepoCheck: true,
   };
@@ -235,6 +296,7 @@ async function runCodex({ prompt, cwd, resumeThreadId, bridgeContext, onMessage 
         provider: 'codex',
         model: model || 'codex varsayılanı',
         permissionMode: `${permission.sandboxMode}/${permission.approvalPolicy}`,
+        effort,
         cwd,
         threadId,
       }));
@@ -247,6 +309,7 @@ async function runCodex({ prompt, cwd, resumeThreadId, bridgeContext, onMessage 
         provider: 'codex',
         model: model || 'codex varsayılanı',
         permissionMode: `${permission.sandboxMode}/${permission.approvalPolicy}`,
+        effort,
         cwd,
         threadId: thread.id || threadId,
       }));
@@ -254,8 +317,17 @@ async function runCodex({ prompt, cwd, resumeThreadId, bridgeContext, onMessage 
     }
 
     if (event.type === 'item.started' || event.type === 'item.updated' || event.type === 'item.completed') {
-      const normalized = normalizeCodexItem(event.item, event.type.split('.')[1]);
+      const phase = event.type.split('.')[1];
       if (event.item && event.item.type === 'agent_message') finalResponse = event.item.text || finalResponse;
+
+      // Metin/akıl yürütme akarken delta gönder; tam mesaj yalnızca tamamlanınca.
+      const delta = codexStreamDelta(event.item, phase);
+      if (delta) {
+        onMessage(delta);
+        if (phase !== 'completed') continue;
+      }
+
+      const normalized = normalizeCodexItem(event.item, phase);
       if (normalized) onMessage(normalized);
       continue;
     }

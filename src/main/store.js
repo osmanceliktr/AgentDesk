@@ -10,6 +10,13 @@ const path = require('path');
 const crypto = require('crypto');
 const { safeStorage } = require('electron');
 
+const PERMISSION_MODES = ['plan', 'default', 'acceptEdits', 'bypassPermissions'];
+const PROVIDERS = ['claude', 'codex'];
+// Claude Agent SDK: Options.effort
+const CLAUDE_EFFORTS = ['low', 'medium', 'high', 'xhigh', 'max'];
+// Codex SDK: ThreadOptions.modelReasoningEffort ('' = Codex CLI varsayılanı)
+const CODEX_EFFORTS = ['', 'minimal', 'low', 'medium', 'high', 'xhigh'];
+
 const DEFAULT_SETTINGS = {
   // 'plan'            → sadece plan üretir, düzenleme yapmaz
   // 'acceptEdits'     → düzenlemeleri onay istemeden uygular (varsayılan)
@@ -20,6 +27,9 @@ const DEFAULT_SETTINGS = {
   model: 'claude-opus-4-5',
   provider: 'claude',
   codexModel: '',
+  effort: 'high', // Claude reasoning effort
+  codexEffort: '', // Codex reasoning effort (boş → CLI varsayılanı)
+  sendOnEnter: false,
   allowedTools: ['Read', 'Grep', 'Glob'],
   projects: [],
   activeProjectId: null,
@@ -56,6 +66,11 @@ function normalizeProject(project) {
   return { id, name, cwd };
 }
 
+// Renderer'dan gelen değerleri beyaz-listeye kıstır: geçersiz değer varsayılana düşer.
+function pickFrom(value, allowed, fallback) {
+  return allowed.includes(value) ? value : fallback;
+}
+
 function normalizeSettings(settings) {
   const merged = { ...DEFAULT_SETTINGS, ...(settings || {}) };
   const projects = [];
@@ -78,8 +93,22 @@ function normalizeSettings(settings) {
   const activeProjectId = activeExists ? merged.activeProjectId : (projects[0] && projects[0].id) || null;
   const activeProject = projects.find((p) => p.id === activeProjectId) || null;
 
+  const maxTurns = Math.min(100, Math.max(1, Math.round(Number(merged.maxTurns)) || DEFAULT_SETTINGS.maxTurns));
+  const allowedTools = Array.isArray(merged.allowedTools)
+    ? merged.allowedTools.filter((tool) => typeof tool === 'string' && tool.trim()).map((tool) => tool.trim())
+    : DEFAULT_SETTINGS.allowedTools;
+
   return {
     ...merged,
+    permissionMode: pickFrom(merged.permissionMode, PERMISSION_MODES, DEFAULT_SETTINGS.permissionMode),
+    provider: pickFrom(merged.provider, PROVIDERS, DEFAULT_SETTINGS.provider),
+    effort: pickFrom(merged.effort, CLAUDE_EFFORTS, DEFAULT_SETTINGS.effort),
+    codexEffort: pickFrom(merged.codexEffort, CODEX_EFFORTS, DEFAULT_SETTINGS.codexEffort),
+    model: typeof merged.model === 'string' && merged.model.trim() ? merged.model.trim() : DEFAULT_SETTINGS.model,
+    codexModel: typeof merged.codexModel === 'string' ? merged.codexModel.trim() : DEFAULT_SETTINGS.codexModel,
+    sendOnEnter: Boolean(merged.sendOnEnter),
+    maxTurns,
+    allowedTools,
     projects,
     activeProjectId,
     lastDirectory: activeProject ? activeProject.cwd : merged.lastDirectory || null,
@@ -137,6 +166,8 @@ function clearApiKey() {
 
 module.exports = {
   DEFAULT_SETTINGS,
+  CLAUDE_EFFORTS,
+  CODEX_EFFORTS,
   getSettings,
   setSettings,
   setApiKey,

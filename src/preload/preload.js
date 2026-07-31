@@ -3,7 +3,7 @@
 // Güvenli köprü: renderer yalnızca bu beyaz-listeli API'yi görür.
 // ipcRenderer doğrudan expose EDİLMEZ.
 
-const { contextBridge, ipcRenderer } = require('electron');
+const { contextBridge, ipcRenderer, webUtils } = require('electron');
 
 contextBridge.exposeInMainWorld('agentAPI', {
   // --- Ayarlar ---
@@ -18,13 +18,33 @@ contextBridge.exposeInMainWorld('agentAPI', {
   // --- Dizin seçimi ---
   selectDirectory: () => ipcRenderer.invoke('dialog:selectDirectory'),
 
+  // Seçili proje dizininde işletim sistemi terminalini açar.
+  openTerminal: (cwd) => ipcRenderer.invoke('terminal:open', cwd),
+
+  // Sürükle-bırak edilen dosyanın diskteki yolu (renderer'a Node API'si açılmaz).
+  getDroppedFilePath: (file) => {
+    try {
+      return webUtils && typeof webUtils.getPathForFile === 'function' ? webUtils.getPathForFile(file) : '';
+    } catch {
+      return '';
+    }
+  },
+
   // --- Kullan?m limitleri / oturum durumu ---
-  getUsageLimits: () => ipcRenderer.invoke('usage:get'),
+  getUsageLimits: (options) => ipcRenderer.invoke('usage:get', options),
+
+  // --- Model yetenekleri (efor seviyeleri) ---
+  getModels: () => ipcRenderer.invoke('models:get'),
+
+  // --- Proje bazlı token/maliyet istatistiği ---
+  getUsageStats: () => ipcRenderer.invoke('stats:get'),
 
   // --- Konuşma geçmişi (sol menü) ---
   listConversations: () => ipcRenderer.invoke('conversation:list'),
   loadConversation: (id) => ipcRenderer.invoke('conversation:load', id),
   deleteConversation: (id) => ipcRenderer.invoke('conversation:delete', id),
+  searchConversations: (query) => ipcRenderer.invoke('conversation:search', query),
+  exportConversation: (id) => ipcRenderer.invoke('conversation:export', id),
 
   // --- Agent oturumu ---
   run: (payload) => ipcRenderer.send('agent:run', payload),
