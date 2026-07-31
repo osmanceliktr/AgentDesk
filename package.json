@@ -1,5 +1,5 @@
 {
-  "name": "ai-cli-agent",
+  "name": "agent-desktop",
   "version": "1.0.0",
   "description": "Claude Agent SDK üzerinden komut verebileceğiniz Electron masaüstü uygulaması",
   "author": "osmanceliktr",
@@ -22,7 +22,7 @@
     "electron-builder": "^26.15.3"
   },
   "build": {
-    "appId": "com.osmanceliktr.aicliagent",
+    "appId": "com.osmanceliktr.agentdesktop",
     "productName": "Agent Desk",
     "directories": {
       "output": "dist",

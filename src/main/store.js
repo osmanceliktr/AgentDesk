@@ -49,7 +49,7 @@ const DEFAULT_SETTINGS = {
 };
 
 const store = new Store({
-  name: 'ai-cli-agent',
+  name: 'agent-desktop',
   defaults: {
     settings: DEFAULT_SETTINGS,
     apiKeyEnc: null, // base64(safeStorage.encryptString(...))

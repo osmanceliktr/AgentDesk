@@ -13,7 +13,7 @@ const conversations = require('./conversations');
 
 // Windows Terminal penceresi adı: her açılışta yeni pencere yerine bu pencereye
 // sekme eklenir. Kullanıcının kendi terminal pencereleri rahatsız edilmez.
-const WT_WINDOW_NAME = 'ai-cli-agent';
+const WT_WINDOW_NAME = 'agent-desktop';
 
 let windowsTerminalPath; // undefined = henüz aranmadı, null = yok
 

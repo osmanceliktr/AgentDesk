@@ -324,7 +324,7 @@ function requestCodexRateLimits(binary) {
       jsonrpc: '2.0',
       id: 1,
       method: 'initialize',
-      params: { clientInfo: { name: 'ai-cli-agent', title: 'Agent Desk', version: '1.0.0' } },
+      params: { clientInfo: { name: 'agent-desktop', title: 'Agent Desk', version: '1.0.0' } },
     });
   });
 }
