@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="tr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline';"
+    />
+    <title>AI CLI Agent</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <div id="app-shell">
+      <aside id="sidebar">
+        <section class="sidebar-section project-section">
+          <div class="sidebar-heading">
+            <span>Projeler</span>
+            <button id="btn-add-project" class="sidebar-action" title="Proje ekle">+</button>
+          </div>
+          <div id="project-list" class="project-list"></div>
+        </section>
+
+        <button id="btn-new-chat" class="btn btn-primary btn-new-chat">+ Yeni Konu&#351;ma</button>
+
+        <section class="sidebar-section conversations-section">
+          <div class="sidebar-heading"><span>Konu&#351;malar</span></div>
+          <div id="conv-list" class="conv-list"></div>
+        </section>
+      </aside>
+
+      <div id="main-panel">
+        <header id="topbar">
+          <div class="topbar-left">
+            <div class="project-context">
+              <span id="project-name" class="project-name">Proje se&#231;ilmedi</span>
+              <span id="project-path" class="dir-path" title="">Sol panelden proje ekleyin</span>
+            </div>
+          </div>
+          <div class="topbar-right">
+            <select id="provider-select" class="topbar-select provider-select" title="Agent sa&#287;lay&#305;c&#305;s&#305;">
+              <option value="claude">Claude</option>
+              <option value="codex">Codex</option>
+            </select>
+            <select id="inline-model-select" class="topbar-select model-select" title="Model"></select>
+            <select id="mode-select" class="topbar-select mode-select" title="&#304;zin modu">
+              <option value="plan">Plan</option>
+              <option value="default">Onayl&#305;</option>
+              <option value="acceptEdits">Auto</option>
+              <option value="bypassPermissions">Bypass</option>
+            </select>
+            <button id="btn-usage" class="btn" title="Kullan&#305;m limitleri">Limitler</button>
+            <button id="btn-settings" class="btn btn-icon" title="Ayarlar">&#9881;</button>
+          </div>
+        </header>
+
+        <main id="messages"></main>
+
+        <footer id="composer">
+          <textarea
+            id="input"
+            rows="3"
+            placeholder="Komutunuzu yaz&#305;n (Ctrl+Enter ile g&#246;nderin)..."
+          ></textarea>
+          <div class="composer-buttons">
+            <button id="btn-send" class="btn btn-primary" disabled>G&#246;nder</button>
+            <button id="btn-cancel" class="btn btn-danger" disabled>&#304;ptal</button>
+          </div>
+        </footer>
+      </div>
+    </div>
+
+    <div id="settings-overlay" class="overlay hidden">
+      <div class="panel">
+        <h2>Ayarlar</h2>
+
+        <label class="field">
+          <span>API Anahtar&#305; (ANTHROPIC_API_KEY) &mdash; opsiyonel</span>
+          <input
+            id="set-apikey"
+            type="password"
+            placeholder="Bo&#351; b&#305;rak&#305;n &rarr; Claude aboneli&#287;iniz kullan&#305;l&#305;r"
+            autocomplete="off"
+          />
+          <small id="apikey-status" class="hint"></small>
+        </label>
+
+        <label class="field">
+          <span>&#304;zin Modu</span>
+          <select id="set-mode">
+            <option value="plan">plan &mdash; sadece plan &#252;retir</option>
+            <option value="default">default &mdash; her ara&#231; i&#231;in onay ister</option>
+            <option value="acceptEdits">acceptEdits &mdash; d&#252;zenlemeleri otomatik onaylar</option>
+            <option value="bypassPermissions">bypassPermissions &mdash; onay istemez</option>
+          </select>
+        </label>
+
+        <label class="field">
+          <span>Claude Modeli</span>
+          <select id="set-model">
+            <optgroup label="En yetenekli">
+              <option value="claude-fable-5">Claude Fable 5</option>
+            </optgroup>
+            <optgroup label="Opus">
+              <option value="claude-opus-5">Claude Opus 5</option>
+              <option value="claude-opus-4-8">Claude Opus 4.8</option>
+              <option value="claude-opus-4-7">Claude Opus 4.7</option>
+              <option value="claude-opus-4-6">Claude Opus 4.6</option>
+              <option value="claude-opus-4-5">Claude Opus 4.5</option>
+            </optgroup>
+            <optgroup label="Sonnet">
+              <option value="claude-sonnet-5">Claude Sonnet 5</option>
+              <option value="claude-sonnet-4-6">Claude Sonnet 4.6</option>
+              <option value="claude-sonnet-4-5">Claude Sonnet 4.5</option>
+            </optgroup>
+            <optgroup label="Haiku">
+              <option value="claude-haiku-4-5">Claude Haiku 4.5</option>
+            </optgroup>
+            <optgroup label="&#214;zel eri&#351;im">
+              <option value="claude-mythos-5">Claude Mythos 5</option>
+            </optgroup>
+          </select>
+        </label>
+
+        <label class="field">
+          <span>Codex Modeli &mdash; opsiyonel</span>
+          <select id="set-codex-model"></select>
+          <small class="hint">Codex yerel CLI/ChatGPT oturumunu kullan&#305;r. Gerekirse terminalde codex login &#231;al&#305;&#351;t&#305;r&#305;n.</small>
+        </label>
+
+        <label class="field">
+          <span>Maksimum Tur (maxTurns)</span>
+          <input id="set-maxturns" type="number" min="1" max="100" />
+        </label>
+
+        <label class="field">
+          <span>&#304;zinli Ara&#231;lar (Claude, virg&#252;lle ay&#305;r&#305;n)</span>
+          <input id="set-tools" type="text" placeholder="Read, Grep, Glob" />
+        </label>
+
+        <div class="panel-buttons">
+          <button id="btn-clear-key" class="btn btn-danger">Anahtar&#305; Sil</button>
+          <span class="spacer"></span>
+          <button id="btn-settings-cancel" class="btn">Kapat</button>
+          <button id="btn-settings-save" class="btn btn-primary">Kaydet</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="usage-overlay" class="overlay hidden">
+      <div class="panel panel-wide">
+        <h2>Kullan&#305;m Limitleri</h2>
+        <p id="usage-status" class="hint"></p>
+        <div id="usage-content" class="usage-content"></div>
+        <div class="panel-buttons">
+          <button id="btn-usage-refresh" class="btn">Yenile</button>
+          <span class="spacer"></span>
+          <button id="btn-usage-close" class="btn btn-primary">Kapat</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="perm-overlay" class="overlay hidden">
+      <div class="panel">
+        <h2>Ara&#231; Kullan&#305;m Onay&#305;</h2>
+        <p>Agent bir ara&#231; kullanmak istiyor:</p>
+        <div class="perm-tool" id="perm-tool"></div>
+        <pre class="perm-input" id="perm-input"></pre>
+        <div class="panel-buttons">
+          <span class="spacer"></span>
+          <button id="btn-perm-deny" class="btn btn-danger">Reddet</button>
+          <button id="btn-perm-allow" class="btn btn-primary">&#304;zin Ver</button>
+        </div>
+      </div>
+    </div>
+
+    <script src="renderer.js"></script>
+  </body>
+</html>

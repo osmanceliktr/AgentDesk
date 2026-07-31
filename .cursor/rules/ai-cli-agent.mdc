@@ -1,0 +1,45 @@
+---
+description: Project rules for the AI CLI Agent Electron app
+globs:
+  - "**/*.js"
+  - "**/*.html"
+  - "**/*.css"
+alwaysApply: true
+---
+
+# AI CLI Agent Rules
+
+This is a plain JavaScript Electron desktop app for running `@anthropic-ai/claude-agent-sdk`.
+
+## Architecture
+
+- Keep `src/main/` for Electron main process code, Node APIs, filesystem access, settings, dialogs, conversation storage, and SDK execution.
+- Keep `src/preload/preload.js` as the only bridge between main and renderer.
+- Keep `src/renderer/` browser-only. Do not use Node APIs there.
+- Do not add TypeScript, React, bundlers, or UI frameworks unless requested.
+
+## Security
+
+- Do not expose `ipcRenderer`, secrets, Node APIs, or environment variables to `window`.
+- Keep `contextIsolation: true`, `nodeIntegration: false`, and `sandbox: true`.
+- Keep API keys in the main process and store them via `safeStorage` when available.
+- Validate renderer-provided IPC payloads before using them in SDK options, filesystem operations, or settings.
+- Do not make `bypassPermissions` the default.
+
+## SDK Behavior
+
+- Import `@anthropic-ai/claude-agent-sdk` dynamically from CommonJS.
+- Run SDK queries only in the main process.
+- Preserve selected-`cwd` scoping, streaming IPC messages, permission prompts, cancellation, and `session_id` resume behavior.
+- For packaged builds, preserve `process.execPath` plus `ELECTRON_RUN_AS_NODE`.
+
+## Renderer
+
+- Keep the renderer dependency-free when possible.
+- Use `textContent` for untrusted text.
+- If markdown rendering changes, escape HTML before allowing limited markup.
+- Keep Turkish UI copy unless the user asks otherwise.
+
+## Validation
+
+Run `npm run build` after meaningful code changes. Use `npm run dev` for manual checks when UI, IPC, dialogs, SDK streaming, or packaging behavior changes.
