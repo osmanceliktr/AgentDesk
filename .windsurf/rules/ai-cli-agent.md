@@ -1,4 +1,4 @@
-# AI CLI Agent Rules
+# Agent Desk Rules
 
 Apply these rules across the repository.
 

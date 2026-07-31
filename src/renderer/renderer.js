@@ -41,6 +41,7 @@ const el = {
   setCodexModel: document.getElementById('set-codex-model'),
   setCodexEffort: document.getElementById('set-codex-effort'),
   setSendOnEnter: document.getElementById('set-send-on-enter'),
+  themePicker: document.getElementById('theme-picker'),
   setMaxTurns: document.getElementById('set-maxturns'),
   setTools: document.getElementById('set-tools'),
   btnClearKey: document.getElementById('btn-clear-key'),
@@ -85,6 +86,7 @@ let activeProjectId = null;
 let currentProvider = 'claude';
 let settingsCache = null;
 let lastAssistantText = '';
+let pendingTheme = null; // ayarlar panelinde seçilen ama henüz kaydedilmemiş tema
 
 const CLAUDE_MODEL_GROUPS = [
   { label: 'En yetenekli', options: [{ value: 'claude-fable-5', label: 'Claude Fable 5' }] },
@@ -127,6 +129,20 @@ const CODEX_EFFORT_OPTIONS = [
   { value: 'high', label: 'Efor: Yüksek' },
   { value: 'xhigh', label: 'Efor: Çok yüksek' },
 ];
+
+// Arayüz temaları. value → src/main/store.js THEMES ve style.css [data-theme] blokları
+// ile birebir aynı olmalı. dots: kartta gösterilen zemin/yüzey/vurgu örnekleri.
+const THEME_OPTIONS = [
+  { value: 'gece', label: 'Gece', dots: ['#1e1e2e', '#2f3147', '#7c93ff'] },
+  { value: 'gunduz', label: 'Gündüz', dots: ['#f4f6fb', '#eaeef7', '#4a5bd0'] },
+  { value: 'ceviz-krem', label: 'Ceviz Krem', dots: ['#f4ecdf', '#eadfcc', '#94521f'] },
+  { value: 'buz-mavisi', label: 'Buz Mavisi', dots: ['#eef3fa', '#e1eaf6', '#1160bd'] },
+  { value: 'gul-kurusu', label: 'Gül Kurusu', dots: ['#faf1f2', '#f2e2e4', '#a82f52'] },
+  { value: 'derin-deniz', label: 'Derin Deniz', dots: ['#0c1622', '#17293e', '#3fb6f0'] },
+  { value: 'bordo-ates', label: 'Bordo Ateş', dots: ['#1a1113', '#2e1c20', '#e8556c'] },
+  { value: 'zumrut-orman', label: 'Zümrüt Orman', dots: ['#0d1a14', '#182f23', '#2fd6b0'] },
+];
+const DEFAULT_THEME = 'gece';
 
 const CODEX_MODEL_GROUPS = [
   {
@@ -535,6 +551,57 @@ async function updateSettings(partial) {
   syncTopbarControls();
   syncSettingsPanelModelFields();
   syncProjectState();
+  applyTheme(settingsCache.theme);
+}
+
+// ---------------------------------------------------------------------------
+// Tema
+// ---------------------------------------------------------------------------
+// Açılıştaki ilk uygulama theme-boot.js içinde yapılır (flaş olmasın diye);
+// buradaki çağrılar sonraki değişiklikler ve canlı önizleme içindir.
+function applyTheme(theme) {
+  const valid = THEME_OPTIONS.some((t) => t.value === theme);
+  document.documentElement.dataset.theme = valid ? theme : DEFAULT_THEME;
+}
+
+function renderThemePicker(selected) {
+  if (!el.themePicker) return;
+  el.themePicker.textContent = '';
+  for (const theme of THEME_OPTIONS) {
+    const card = document.createElement('button');
+    card.type = 'button';
+    card.className = theme.value === selected ? 'theme-card active' : 'theme-card';
+    card.dataset.theme = theme.value;
+    card.setAttribute('aria-pressed', String(theme.value === selected));
+
+    const dots = document.createElement('span');
+    dots.className = 'theme-dots';
+    for (const color of theme.dots) {
+      const dot = document.createElement('span');
+      dot.className = 'theme-dot';
+      dot.style.background = color;
+      dots.appendChild(dot);
+    }
+
+    const name = document.createElement('span');
+    name.className = 'theme-card-name';
+    name.textContent = theme.label;
+
+    const check = document.createElement('span');
+    check.className = 'theme-card-check';
+    check.textContent = '✓';
+
+    card.append(dots, name, check);
+    card.addEventListener('click', () => selectTheme(theme.value));
+    el.themePicker.appendChild(card);
+  }
+}
+
+// Tıklayınca anında önizlenir; kalıcı olması için Kaydet gerekir.
+function selectTheme(theme) {
+  pendingTheme = theme;
+  applyTheme(theme);
+  renderThemePicker(theme);
 }
 
 // ---------------------------------------------------------------------------
@@ -1690,6 +1757,8 @@ async function openSettings() {
     ? '✓ Kayıtlı bir anahtar var (değiştirmek için yenisini girin).'
     : 'Anahtar yok - mevcut Claude aboneliğiniz (claude CLI oturumu) kullanılacak.';
   el.setMode.value = s.permissionMode || 'plan';
+  pendingTheme = s.theme || DEFAULT_THEME;
+  renderThemePicker(pendingTheme);
   syncSettingsPanelModelFields();
   el.setMaxTurns.value = s.maxTurns || 10;
   el.setTools.value = (s.allowedTools || []).join(', ');
@@ -1697,6 +1766,9 @@ async function openSettings() {
 }
 
 function closeSettings() {
+  // Kaydedilmemiş tema önizlemesini geri al (Kapat ve Escape için de geçerli).
+  applyTheme((settingsCache && settingsCache.theme) || DEFAULT_THEME);
+  pendingTheme = null;
   el.settingsOverlay.classList.add('hidden');
 }
 
@@ -1717,6 +1789,7 @@ async function saveSettings() {
     codexModel: el.setCodexModel.value,
     codexEffort: el.setCodexEffort.value,
     sendOnEnter: Boolean(el.setSendOnEnter && el.setSendOnEnter.checked),
+    theme: pendingTheme || DEFAULT_THEME,
     provider: currentProvider,
     maxTurns: Number(el.setMaxTurns.value) || 10,
     allowedTools: tools,
@@ -1899,6 +1972,8 @@ async function init() {
 
   const settings = await api.getSettings();
   settingsCache = settings;
+  // theme-boot.js zaten uyguladı; bu, senkron köprü başarısız olduysa emniyet ağı.
+  applyTheme(settings.theme);
   syncTopbarControls();
   syncProjectState();
   autoGrowInput();

@@ -1,4 +1,4 @@
-# AI CLI Agent Guidance
+# Agent Desk Guidance
 
 This repository is a plain JavaScript Electron app that wraps `@anthropic-ai/claude-agent-sdk`.
 

@@ -9,6 +9,8 @@ contextBridge.exposeInMainWorld('agentAPI', {
   // --- Ayarlar ---
   getSettings: () => ipcRenderer.invoke('settings:get'),
   setSettings: (partial) => ipcRenderer.invoke('settings:set', partial),
+  // Senkron: tema ilk boyamadan önce uygulanmalı (bkz. renderer/theme-boot.js).
+  getThemeSync: () => ipcRenderer.sendSync('settings:theme-sync'),
 
   // --- API anahtarı ---
   hasApiKey: () => ipcRenderer.invoke('apiKey:has'),

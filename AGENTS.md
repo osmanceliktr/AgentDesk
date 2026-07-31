@@ -1,4 +1,4 @@
-# AI CLI Agent Rules
+# Agent Desk Rules
 
 ## Project Shape
 

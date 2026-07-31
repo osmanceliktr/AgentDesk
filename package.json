@@ -23,7 +23,7 @@
   },
   "build": {
     "appId": "com.osmanceliktr.aicliagent",
-    "productName": "AI CLI Agent",
+    "productName": "Agent Desk",
     "directories": {
       "output": "dist",
       "buildResources": "build"

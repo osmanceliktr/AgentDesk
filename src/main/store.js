@@ -16,6 +16,17 @@ const PROVIDERS = ['claude', 'codex'];
 const CLAUDE_EFFORTS = ['low', 'medium', 'high', 'xhigh', 'max'];
 // Codex SDK: ThreadOptions.modelReasoningEffort ('' = Codex CLI varsayılanı)
 const CODEX_EFFORTS = ['', 'minimal', 'low', 'medium', 'high', 'xhigh'];
+// Arayüz temaları; renk tanımları src/renderer/style.css içindeki [data-theme] blokları.
+const THEMES = [
+  'gece',
+  'gunduz',
+  'ceviz-krem',
+  'buz-mavisi',
+  'gul-kurusu',
+  'derin-deniz',
+  'bordo-ates',
+  'zumrut-orman',
+];
 
 const DEFAULT_SETTINGS = {
   // 'plan'            → sadece plan üretir, düzenleme yapmaz
@@ -30,6 +41,7 @@ const DEFAULT_SETTINGS = {
   effort: 'high', // Claude reasoning effort
   codexEffort: '', // Codex reasoning effort (boş → CLI varsayılanı)
   sendOnEnter: false,
+  theme: 'gece', // arayüz teması
   allowedTools: ['Read', 'Grep', 'Glob'],
   projects: [],
   activeProjectId: null,
@@ -107,6 +119,7 @@ function normalizeSettings(settings) {
     model: typeof merged.model === 'string' && merged.model.trim() ? merged.model.trim() : DEFAULT_SETTINGS.model,
     codexModel: typeof merged.codexModel === 'string' ? merged.codexModel.trim() : DEFAULT_SETTINGS.codexModel,
     sendOnEnter: Boolean(merged.sendOnEnter),
+    theme: pickFrom(merged.theme, THEMES, DEFAULT_SETTINGS.theme),
     maxTurns,
     allowedTools,
     projects,
@@ -168,6 +181,7 @@ module.exports = {
   DEFAULT_SETTINGS,
   CLAUDE_EFFORTS,
   CODEX_EFFORTS,
+  THEMES,
   getSettings,
   setSettings,
   setApiKey,

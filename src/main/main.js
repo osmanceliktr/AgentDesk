@@ -71,13 +71,26 @@ async function getModelsCached() {
   }
 }
 
+// Pencerenin ilk boyama zemini; seçili temanın --bg değeriyle aynı olmalı ki
+// açılışta koyu/açık flaş yaşanmasın (style.css içindeki [data-theme] blokları).
+const THEME_WINDOW_BG = {
+  gece: '#1e1e2e',
+  gunduz: '#f4f6fb',
+  'ceviz-krem': '#f4ecdf',
+  'buz-mavisi': '#eef3fa',
+  'gul-kurusu': '#faf1f2',
+  'derin-deniz': '#0c1622',
+  'bordo-ates': '#1a1113',
+  'zumrut-orman': '#0d1a14',
+};
+
 function createWindow() {
   mainWindow = new BrowserWindow({
     width: 1200,
     height: 850,
     minWidth: 800,
     minHeight: 600,
-    backgroundColor: '#1e1e2e',
+    backgroundColor: THEME_WINDOW_BG[store.getSettings().theme] || THEME_WINDOW_BG.gece,
     webPreferences: {
       preload: path.join(__dirname, '..', 'preload', 'preload.js'),
       contextIsolation: true,
@@ -116,6 +129,10 @@ function requestPermissionFromRenderer(req) {
 function registerIpc() {
   // --- Ayarlar ---
   ipcMain.handle('settings:get', () => store.getSettings());
+  // Senkron ve tek seferlik: renderer temayı ilk boyamadan önce okur.
+  ipcMain.on('settings:theme-sync', (e) => {
+    e.returnValue = store.getSettings().theme;
+  });
   ipcMain.handle('settings:set', (_e, partial) => {
     const before = store.getSettings();
     const updated = store.setSettings(partial);

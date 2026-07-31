@@ -1,5 +1,5 @@
 ---
-description: Project rules for the AI CLI Agent Electron app
+description: Project rules for the Agent Desk Electron app
 globs:
   - "**/*.js"
   - "**/*.html"
@@ -7,7 +7,7 @@ globs:
 alwaysApply: true
 ---
 
-# AI CLI Agent Rules
+# Agent Desk Rules
 
 This is a plain JavaScript Electron desktop app for running `@anthropic-ai/claude-agent-sdk`.
 

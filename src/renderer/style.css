@@ -1,17 +1,230 @@
-﻿:root {
+﻿/* ---------------------------------------------------------------------------
+   Tema sistemi
+   ---------------------------------------------------------------------------
+   Tum renkler asagidaki token'lardan gelir; stil kurallarinda sabit renk YOKTUR.
+   Varsayilan (Gece) paleti :root icinde durur, diger temalar <html data-theme="...">
+   uzerinden ezer. Tema slug'lari src/main/store.js icindeki THEMES ile ayni.
+   Yeni tema eklerken: store.js THEMES + main.js THEME_WINDOW_BG +
+   renderer.js THEME_OPTIONS + buraya bir [data-theme] blogu.
+--------------------------------------------------------------------------- */
+
+/* --- Gece (varsayilan): koyu / notr indigo --- */
+:root {
   --bg: #1e1e2e;
   --bg-alt: #27293d;
   --bg-elev: #2f3147;
+  --bg-sidebar: #191a29;
+  --bg-hover: #383b57;
   --border: #3a3d5c;
+  --hairline: rgba(255, 255, 255, 0.07);
   --text: #e5e7f0;
   --text-dim: #a0a3bd;
+  --text-faint: #8a8db0;
   --accent: #7c93ff;
   --accent-hover: #6a82f2;
+  --on-accent: #14152a;
   --blue: #4a9eff;
   --green: #55d18a;
   --red: #ff6b7a;
   --yellow: #ffcf6b;
+  --code-bg: rgba(0, 0, 0, 0.25);
+  --scrim: rgba(0, 0, 0, 0.6);
+  --shadow: rgba(0, 0, 0, 0.5);
+  --shadow-soft: rgba(0, 0, 0, 0.12);
   --radius: 8px;
+}
+
+/* --- Gunduz: acik / notr gri-beyaz --- */
+[data-theme='gunduz'] {
+  --bg: #f4f6fb;
+  --bg-alt: #ffffff;
+  --bg-elev: #eaeef7;
+  --bg-sidebar: #e6eaf4;
+  --bg-hover: #dde3f0;
+  --border: #c6cfe1;
+  --hairline: rgba(20, 25, 45, 0.08);
+  --text: #1a1d2b;
+  --text-dim: #5a6379;
+  --text-faint: #5e6678;
+  --accent: #4a5bd0;
+  --accent-hover: #3b4ac0;
+  --on-accent: #ffffff;
+  --blue: #1668d6;
+  --green: #17794c;
+  --red: #c62f42;
+  --yellow: #8a5f00;
+  --code-bg: rgba(20, 25, 45, 0.06);
+  --scrim: rgba(20, 25, 45, 0.45);
+  --shadow: rgba(20, 25, 45, 0.18);
+  --shadow-soft: rgba(20, 25, 45, 0.07);
+}
+
+/* --- Ceviz Krem: acik / sicak krem zemin, bakir vurgu --- */
+[data-theme='ceviz-krem'] {
+  --bg: #f4ecdf;
+  --bg-alt: #fdf8ef;
+  --bg-elev: #eadfcc;
+  --bg-sidebar: #e5d7c0;
+  --bg-hover: #ddcfb5;
+  --border: #d3c0a2;
+  --hairline: rgba(60, 42, 26, 0.1);
+  --text: #3a2c1e;
+  --text-dim: #6b5943;
+  --text-faint: #6e5d47;
+  --accent: #94521f;
+  --accent-hover: #7f4517;
+  --on-accent: #fdf8ef;
+  --blue: #2c6b7a;
+  --green: #4c6529;
+  --red: #a83a2b;
+  --yellow: #7a590c;
+  --code-bg: rgba(60, 42, 26, 0.07);
+  --scrim: rgba(45, 32, 20, 0.5);
+  --shadow: rgba(60, 42, 26, 0.22);
+  --shadow-soft: rgba(60, 42, 26, 0.08);
+}
+
+/* --- Derin Deniz: koyu / lacivert zemin, camgobegi vurgu --- */
+[data-theme='derin-deniz'] {
+  --bg: #0c1622;
+  --bg-alt: #122234;
+  --bg-elev: #17293e;
+  --bg-sidebar: #08111b;
+  --bg-hover: #1e3550;
+  --border: #234058;
+  --hairline: rgba(160, 210, 255, 0.09);
+  --text: #dbeaf7;
+  --text-dim: #8ba7c2;
+  --text-faint: #7d99b4;
+  --accent: #3fb6f0;
+  --accent-hover: #2aa2de;
+  --on-accent: #04121d;
+  --blue: #59c2ff;
+  --green: #3ecfa0;
+  --red: #ff7a85;
+  --yellow: #ffc861;
+  --code-bg: rgba(0, 0, 0, 0.3);
+  --scrim: rgba(2, 10, 18, 0.68);
+  --shadow: rgba(0, 0, 0, 0.55);
+  --shadow-soft: rgba(0, 0, 0, 0.14);
+}
+
+/* --- Bordo Ates: koyu / erik zemin, mercan vurgu --- */
+[data-theme='bordo-ates'] {
+  --bg: #1a1113;
+  --bg-alt: #241619;
+  --bg-elev: #2e1c20;
+  --bg-sidebar: #140c0e;
+  --bg-hover: #3a2429;
+  --border: #4a2b31;
+  --hairline: rgba(255, 210, 215, 0.08);
+  --text: #f3e3e4;
+  --text-dim: #b99a9d;
+  --text-faint: #a4878b;
+  --accent: #e8556c;
+  /* Vurgu uzerindeki yazi koyu oldugu icin hover KOYULMAZ, parlar; aksi halde
+     .btn-primary:hover metni AA kontrastinin altina duser. */
+  --accent-hover: #ef6b80;
+  --on-accent: #1a1113;
+  --blue: #7f9ede;
+  --green: #6fc48d;
+  /* Vurgu rengi de kirmizi ailesinden oldugu icin hata rengi daha saf kirmiziya cekildi. */
+  --red: #ff5f5f;
+  --yellow: #e0a94a;
+  --code-bg: rgba(0, 0, 0, 0.28);
+  --scrim: rgba(12, 6, 7, 0.66);
+  --shadow: rgba(0, 0, 0, 0.55);
+  --shadow-soft: rgba(0, 0, 0, 0.14);
+}
+
+/* --- Buz Mavisi: acik / soguk mavi zemin --- */
+[data-theme='buz-mavisi'] {
+  --bg: #eef3fa;
+  --bg-alt: #ffffff;
+  --bg-elev: #e1eaf6;
+  --bg-sidebar: #dae5f3;
+  --bg-hover: #cddef0;
+  --border: #b4cae3;
+  --hairline: rgba(15, 45, 75, 0.09);
+  --text: #12263a;
+  --text-dim: #4d6480;
+  --text-faint: #55697f;
+  --accent: #1160bd;
+  --accent-hover: #0d4f9f;
+  --on-accent: #ffffff;
+  --blue: #0f66b3;
+  --green: #127045;
+  --red: #c22e40;
+  --yellow: #855c00;
+  --code-bg: rgba(15, 45, 75, 0.07);
+  --scrim: rgba(10, 30, 55, 0.45);
+  --shadow: rgba(15, 45, 75, 0.2);
+  --shadow-soft: rgba(15, 45, 75, 0.08);
+}
+
+/* --- Gul Kurusu: acik / sicak pembe-gul zemin --- */
+[data-theme='gul-kurusu'] {
+  --bg: #faf1f2;
+  --bg-alt: #fffbfb;
+  --bg-elev: #f2e2e4;
+  --bg-sidebar: #eed9dc;
+  --bg-hover: #e7ccd0;
+  --border: #ddc0c5;
+  --hairline: rgba(75, 30, 38, 0.1);
+  --text: #34191e;
+  --text-dim: #745057;
+  --text-faint: #6b474e;
+  --accent: #a82f52;
+  --accent-hover: #8f2444;
+  --on-accent: #fffbfb;
+  --blue: #2a5f9e;
+  --green: #4a6b32;
+  /* Vurgu gul-sarabi; hata rengi ayirt edilsin diye tugla-kirmiziya kaydirildi. */
+  --red: #ab3823;
+  --yellow: #8a5f00;
+  --code-bg: rgba(75, 30, 38, 0.07);
+  --scrim: rgba(55, 22, 28, 0.45);
+  --shadow: rgba(75, 30, 38, 0.2);
+  --shadow-soft: rgba(75, 30, 38, 0.08);
+}
+
+/* --- Zumrut Orman: koyu / yesil zemin, zumrut vurgu --- */
+[data-theme='zumrut-orman'] {
+  --bg: #0d1a14;
+  --bg-alt: #12241b;
+  --bg-elev: #182f23;
+  --bg-sidebar: #091410;
+  --bg-hover: #1f3c2d;
+  --border: #274a37;
+  --hairline: rgba(180, 255, 215, 0.08);
+  --text: #dcefe3;
+  --text-dim: #90b3a0;
+  --text-faint: #7a9a89;
+  --accent: #2fd6b0;
+  --accent-hover: #23bd9a;
+  --on-accent: #06170f;
+  --blue: #63b6e8;
+  /* Vurgu zumrut-yesil oldugu icin basari yesili yaprak tonuna kaydirildi. */
+  --green: #6ad98a;
+  --red: #ff6f6f;
+  --yellow: #e8c15c;
+  --code-bg: rgba(0, 0, 0, 0.28);
+  --scrim: rgba(4, 14, 10, 0.66);
+  --shadow: rgba(0, 0, 0, 0.55);
+  --shadow-soft: rgba(0, 0, 0, 0.14);
+}
+
+/* Yarisaydam vurgu zeminleri: bir kez tanimlanir, tema renklerinden turetilir.
+   [data-theme] <html> uzerinde oldugu icin var(--red) vb. o temanin degerine cozulur. */
+:root {
+  --tint-accent: color-mix(in srgb, var(--accent) 12%, transparent);
+  --tint-blue: color-mix(in srgb, var(--blue) 10%, transparent);
+  --tint-blue-s: color-mix(in srgb, var(--blue) 20%, transparent);
+  --tint-green: color-mix(in srgb, var(--green) 10%, transparent);
+  --tint-green-s: color-mix(in srgb, var(--green) 18%, transparent);
+  --tint-red: color-mix(in srgb, var(--red) 10%, transparent);
+  --tint-red-s: color-mix(in srgb, var(--red) 18%, transparent);
+  --tint-yellow-s: color-mix(in srgb, var(--yellow) 18%, transparent);
 }
 
 * {
@@ -58,7 +271,7 @@ body {
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
-  background: #191a29;
+  background: var(--bg-sidebar);
   border-right: 1px solid var(--border);
   padding: 12px;
   gap: 10px;
@@ -171,7 +384,7 @@ body {
 }
 
 .conv-item-delete:hover {
-  background: rgba(255, 107, 122, 0.18);
+  background: var(--tint-red-s);
   color: var(--red);
 }
 
@@ -243,20 +456,20 @@ body {
   margin-left: 7px;
   padding: 1px 6px;
   border-radius: 999px;
-  background: rgba(91, 141, 239, 0.18);
-  color: #9dbcff;
+  background: var(--tint-blue-s);
+  color: var(--blue);
   font-size: 11px;
   font-weight: 600;
 }
 
 .usage-badge.warn {
-  background: rgba(224, 165, 60, 0.18);
-  color: #e6b964;
+  background: var(--tint-yellow-s);
+  color: var(--yellow);
 }
 
 .usage-badge.critical {
-  background: rgba(224, 96, 96, 0.2);
-  color: #f08c8c;
+  background: var(--tint-red-s);
+  color: var(--red);
 }
 
 /* --- Butonlar --- */
@@ -272,7 +485,7 @@ body {
 }
 
 .btn:hover:not(:disabled) {
-  background: #383b57;
+  background: var(--bg-hover);
 }
 
 .btn:disabled {
@@ -283,7 +496,7 @@ body {
 .btn-primary {
   background: var(--accent);
   border-color: var(--accent);
-  color: #14152a;
+  color: var(--on-accent);
   font-weight: 600;
 }
 
@@ -298,7 +511,7 @@ body {
 }
 
 .btn-danger:hover:not(:disabled) {
-  background: rgba(255, 107, 122, 0.12);
+  background: var(--tint-red);
 }
 
 .btn-icon {
@@ -431,20 +644,20 @@ body {
 
 .msg-tool {
   border-left: 3px solid var(--blue);
-  background: rgba(74, 158, 255, 0.08);
+  background: var(--tint-blue);
 }
 .msg-tool .msg-label {
   color: var(--blue);
 }
 
 .msg-toolresult {
-  border-left: 3px solid #8a8db0;
+  border-left: 3px solid var(--text-faint);
   background: var(--bg-elev);
   color: var(--text-dim);
   font-size: 13px;
 }
 .msg-toolresult .msg-label {
-  color: #8a8db0;
+  color: var(--text-faint);
 }
 
 .msg-system {
@@ -459,7 +672,7 @@ body {
 
 .msg-result-success {
   border-left: 3px solid var(--green);
-  background: rgba(85, 209, 138, 0.08);
+  background: var(--tint-green);
 }
 .msg-result-success .msg-label {
   color: var(--green);
@@ -468,7 +681,7 @@ body {
 .msg-result-error,
 .msg-error {
   border-left: 3px solid var(--red);
-  background: rgba(255, 107, 122, 0.1);
+  background: var(--tint-red);
 }
 .msg-result-error .msg-label,
 .msg-error .msg-label {
@@ -478,7 +691,7 @@ body {
 .msg pre {
   margin: 4px 0;
   padding: 6px 8px;
-  background: rgba(0, 0, 0, 0.25);
+  background: var(--code-bg);
   border-radius: 6px;
   overflow-x: auto;
   font-family: "Cascadia Code", "Consolas", monospace;
@@ -565,7 +778,7 @@ body {
 }
 
 .msg-body .md-inline-code {
-  background: rgba(0, 0, 0, 0.25);
+  background: var(--code-bg);
   padding: 1px 5px;
   border-radius: 4px;
   font-family: "Cascadia Code", "Consolas", monospace;
@@ -659,7 +872,7 @@ body {
 .overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.6);
+  background: var(--scrim);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -679,7 +892,7 @@ body {
   max-width: 92vw;
   max-height: 88vh;
   overflow-y: auto;
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 12px 40px var(--shadow);
 }
 
 .panel h2 {
@@ -730,6 +943,80 @@ body {
   padding: 0;
   flex: 0 0 auto;
   accent-color: var(--accent);
+}
+
+/* --- Tema seçici (Ayarlar) --- */
+#theme-picker {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+}
+
+.theme-card {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  background: var(--bg-elev);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 9px 11px;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 13px;
+  text-align: left;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.theme-card:hover {
+  background: var(--bg-hover);
+}
+
+.theme-card.active {
+  border-color: var(--accent);
+  background: var(--tint-accent);
+}
+
+.theme-card:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.theme-dots {
+  display: flex;
+  flex: 0 0 auto;
+}
+
+/* Örnek renkler: tema paletinin zemin/yüzey/vurgu üçlüsü. Renkler renderer'dan
+   satır içi style ile gelir; seçili olmayan temaların rengini de göstermek gerekir. */
+.theme-dot {
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  border: 1px solid var(--hairline);
+}
+
+.theme-dot + .theme-dot {
+  margin-left: -4px;
+}
+
+.theme-card-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.theme-card-check {
+  flex: 0 0 auto;
+  color: var(--accent);
+  font-weight: 700;
+  visibility: hidden;
+}
+
+.theme-card.active .theme-card-check {
+  visibility: visible;
 }
 
 .field-check > span {
@@ -810,18 +1097,18 @@ body {
 }
 
 .diff-add {
-  background: rgba(80, 200, 120, 0.14);
-  color: #7ee2a8;
+  background: var(--tint-green-s);
+  color: var(--green);
 }
 
 .diff-del {
-  background: rgba(224, 96, 96, 0.14);
-  color: #f0a0a0;
+  background: var(--tint-red-s);
+  color: var(--red);
 }
 
 #input.drag-over {
   border-color: var(--accent);
-  background: rgba(91, 141, 239, 0.08);
+  background: var(--tint-blue);
 }
 
 .msg-body .md-code {
@@ -874,7 +1161,7 @@ body {
 }
 
 .sidebar-action:hover:not(:disabled) {
-  background: #383b57;
+  background: var(--bg-hover);
 }
 
 .sidebar-action:disabled {
@@ -913,7 +1200,7 @@ body {
   min-width: 18px;
   padding: 0 5px;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.07);
+  background: var(--hairline);
   color: var(--text-dim);
   font-size: 10px;
   line-height: 16px;
@@ -998,7 +1285,7 @@ body {
 }
 
 .project-item-delete:hover {
-  background: rgba(255, 107, 122, 0.18);
+  background: var(--tint-red-s);
   color: var(--red);
 }
 
@@ -1033,7 +1320,7 @@ body {
 .usage-provider {
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  background: rgba(0, 0, 0, 0.12);
+  background: var(--shadow-soft);
   padding: 12px;
   min-width: 0;
 }
@@ -1055,7 +1342,7 @@ body {
   padding: 2px 7px;
   border-radius: 999px;
   border: 1px solid var(--border);
-  background: rgba(255, 255, 255, 0.06);
+  background: var(--hairline);
   color: var(--text-dim);
   font-size: 11px;
   font-weight: 500;
@@ -1065,7 +1352,7 @@ body {
 }
 
 .usage-provider-status.usage-error {
-  color: #f2a1a1;
+  color: var(--red);
 }
 
 .usage-window-list {
@@ -1075,7 +1362,7 @@ body {
 }
 
 .usage-window {
-  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  border-top: 1px solid var(--hairline);
   padding-top: 10px;
 }
 
@@ -1102,23 +1389,23 @@ body {
   margin-top: 6px;
   height: 6px;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.09);
+  background: var(--hairline);
   overflow: hidden;
 }
 
 .usage-bar-fill {
   height: 100%;
   border-radius: 999px;
-  background: #5b8def;
+  background: var(--blue);
   transition: width 0.2s ease;
 }
 
 .usage-bar-fill.warn {
-  background: #e0a53c;
+  background: var(--yellow);
 }
 
 .usage-bar-fill.critical {
-  background: #e06060;
+  background: var(--red);
 }
 
 .usage-window-meta {
@@ -1138,7 +1425,7 @@ body {
 .stats-project {
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  background: rgba(0, 0, 0, 0.12);
+  background: var(--shadow-soft);
   padding: 12px;
   min-width: 0;
 }
@@ -1194,7 +1481,7 @@ body {
   grid-template-columns: minmax(0, auto) minmax(0, 1fr);
   gap: 12px;
   padding: 5px 0;
-  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  border-top: 1px solid var(--hairline);
   font-size: 12px;
 }
 
@@ -1219,7 +1506,7 @@ body {
   color: var(--text-dim);
   font-weight: 600;
   padding: 4px 6px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  border-bottom: 1px solid var(--hairline);
 }
 
 .stats-table th:first-child,
@@ -1234,7 +1521,7 @@ body {
 .stats-table td {
   text-align: right;
   padding: 4px 6px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  border-bottom: 1px solid var(--hairline);
 }
 
 .stats-details {

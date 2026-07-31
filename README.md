@@ -1,4 +1,4 @@
-# AI CLI Agent
+# Agent Desk
 
 Claude Agent SDK (`@anthropic-ai/claude-agent-sdk`) üzerinden komut verebileceğiniz, saf JavaScript ile yazılmış (TypeScript/React yok) bir Electron masaüstü uygulaması. Windows'ta `.exe` olarak paketlenebilir.
 
@@ -19,7 +19,20 @@ Claude Agent SDK (`@anthropic-ai/claude-agent-sdk`) üzerinden komut verebilece�
 - Konuşma arama (başlık + içerik, **tüm projelerde**), Markdown olarak dışa aktarma, mesaj kopyalama, son istemi yeniden gönderme.
 - **`>_` düğmesi:** seçili proje dizininde komut istemi açar. Windows Terminal kuruluysa her tıklama **aynı pencereye yeni sekme** ekler (`ai-cli-agent` adlı pencere; kullanıcının kendi terminal pencereleri rahatsız edilmez), sekme başlığı proje klasörünün adıdır. Windows Terminal yoksa klasik `cmd` penceresine düşer ve bunu bir kez bildirir. macOS'ta Terminal, Linux'ta `$TERMINAL` kullanılır. Renderer'ın verdiği yol doğrudan kullanılmaz; yalnızca kayıtlı proje/konuşma dizinlerinden biriyse çalışır.
 - Klavye kısayolları: `Ctrl+Enter` gönder, `Ctrl+N` yeni konuşma, `Ctrl+K` arama, `Ctrl+,` ayarlar, `Esc` paneli kapat / çalışan turu iptal et. İsteğe bağlı "Enter ile gönder" ayarı.
-- Ayarlanabilir: `permissionMode`, `maxTurns`, `model`, `effort`, `codexModel`, `codexEffort`, `sendOnEnter`, `allowedTools`.
+- **8 tema:** Ayarlar → Tema bölümünden renk örnekli kartlarla seçilir. Tıklandığı anda arayüz değişir (canlı önizleme), **Kaydet** ile kalıcı olur; **Kapat**/`Esc` önizlemeyi geri alır. Seçim uygulama açılışında pencere zeminine de uygulanır, yani açılışta renk flaşı olmaz.
+
+  | Tema | Ton | Karakter |
+  | --- | --- | --- |
+  | Gece _(varsayılan)_ | koyu | nötr indigo |
+  | Gündüz | açık | nötr gri-beyaz |
+  | Ceviz Krem | açık | sıcak krem zemin, bakır vurgu |
+  | Buz Mavisi | açık | soğuk mavi zemin |
+  | Gül Kurusu | açık | pembe-gül zemin |
+  | Derin Deniz | koyu | lacivert zemin, camgöbeği vurgu |
+  | Bordo Ateş | koyu | erik zemin, mercan vurgu |
+  | Zümrüt Orman | koyu | orman yeşili zemin, zümrüt vurgu |
+
+- Ayarlanabilir: `permissionMode`, `maxTurns`, `model`, `effort`, `codexModel`, `codexEffort`, `sendOnEnter`, `theme`, `allowedTools`.
 
 ## Gereksinimler
 
@@ -52,8 +65,8 @@ npm run build
 
 Çıktılar `dist/` klasöründe oluşur:
 
-- **NSIS installer** (`AI CLI Agent Setup <sürüm>.exe`) — kurulum sihirbazı.
-- **Portable** (`AI CLI Agent-<sürüm>-portable.exe`) — kurulum gerektirmeyen tek dosya.
+- **NSIS installer** (`Agent Desk Setup <sürüm>.exe`) — kurulum sihirbazı.
+- **Portable** (`Agent Desk-<sürüm>-portable.exe`) — kurulum gerektirmeyen tek dosya.
 
 Yalnızca birini üretmek için:
 
@@ -98,9 +111,15 @@ src/
 │   └── preload.js
 └── renderer/    # saf HTML/CSS/JS arayüz
     ├── index.html
+    ├── theme-boot.js      # temayı ilk boyamadan önce uygular (flaş engelleyici)
     ├── renderer.js
-    └── style.css
+    └── style.css          # tema token'ları + 8 [data-theme] paleti
 ```
+
+> Yeni tema eklemek için dört yer güncellenir: `store.js` içindeki `THEMES` beyaz listesi,
+> `main.js` içindeki `THEME_WINDOW_BG`, `style.css` içinde bir `[data-theme]` bloğu ve
+> `renderer.js` içindeki `THEME_OPTIONS`. Stil kurallarında sabit renk yoktur; her renk
+> `:root` token'larından gelir, yarısaydam zeminler `color-mix()` ile türetilir.
 
 ## Güvenlik notları
 
