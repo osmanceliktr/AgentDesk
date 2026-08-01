@@ -1,4 +1,4 @@
-﻿'use strict';
+'use strict';
 
 const api = window.agentAPI;
 
@@ -349,6 +349,117 @@ function attachCopyAction(node, getText) {
   });
 }
 
+function normalizeTechnicalSummaryText(value) {
+  return String(value || '').replace(/\\{2,}/g, '\\').replace(/\\"/g, '"');
+}
+
+function trimMiddle(value, max = 120) {
+  const text = normalizeTechnicalSummaryText(value).replace(/\s+/g, ' ').trim();
+  if (text.length <= max) return text;
+  const head = Math.ceil((max - 3) * 0.62);
+  const tail = Math.floor((max - 3) * 0.38);
+  return `${text.slice(0, head)}...${text.slice(-tail)}`;
+}
+
+function parseMaybeJson(text) {
+  const raw = String(text || '').trim();
+  if (!raw || !/^[{[]/.test(raw)) return null;
+  try {
+    return JSON.parse(raw);
+  } catch {
+    return null;
+  }
+}
+
+function unwrapShellCommand(command) {
+  const raw = String(command || '').trim();
+  const match = raw.match(/(?:^|\s)-Command\s+(['"])([\s\S]*)\1\s*$/i);
+  if (match && match[2]) return match[2].trim();
+  return raw;
+}
+
+function summarizeTechnicalPayload(text, fallbackLabel) {
+  const payload = parseMaybeJson(text);
+  const raw = String(text || '');
+  const lineCount = raw ? raw.split(/\r?\n/).length : 0;
+  const size = raw.length >= 1000 ? `${Math.round(raw.length / 100) / 10} KB` : `${raw.length} karakter`;
+
+  if (payload && typeof payload === 'object' && !Array.isArray(payload)) {
+    const command = payload.command || (payload.input && payload.input.command) || '';
+    const output = typeof payload.output === 'string' ? payload.output : '';
+    const parts = [];
+    if (typeof payload.exit_code === 'number') {
+      parts.push(payload.exit_code === 0 ? 'başarılı' : `çıkış ${payload.exit_code}`);
+    } else if (payload.status) {
+      parts.push(String(payload.status));
+    }
+    if (output) parts.push(`${output.split(/\r?\n/).filter(Boolean).length || 1} satır çıktı`);
+    else parts.push(size);
+
+    if (command) {
+      return {
+        title: `Komut çıktısı: ${trimMiddle(unwrapShellCommand(command), 110)}`,
+        meta: parts.join(' · '),
+      };
+    }
+
+    if (payload.error || payload.message) {
+      return {
+        title: trimMiddle(payload.error || payload.message, 120),
+        meta: parts.join(' · '),
+      };
+    }
+  }
+
+  const firstLine = raw.split(/\r?\n/).find((line) => line.trim()) || fallbackLabel || 'Teknik çıktı';
+  return {
+    title: trimMiddle(firstLine, 120),
+    meta: lineCount > 1 ? `${lineCount} satır · ${size}` : size,
+  };
+}
+
+function addTechnicalMessage(cls, label, body, { copyText = null, open = false } = {}) {
+  const text = String(body || '');
+  const div = document.createElement('div');
+  div.className = `msg ${cls} msg-technical`;
+
+  const lbl = document.createElement('span');
+  lbl.className = 'msg-label';
+  lbl.textContent = label;
+  div.appendChild(lbl);
+
+  if (copyText) attachCopyAction(div, () => copyText());
+
+  const summaryInfo = summarizeTechnicalPayload(text, label);
+  const details = document.createElement('details');
+  details.className = 'technical-details';
+  details.open = Boolean(open);
+
+  const summary = document.createElement('summary');
+  summary.className = 'technical-summary';
+  const title = document.createElement('span');
+  title.className = 'technical-summary-title';
+  title.textContent = summaryInfo.title;
+  summary.appendChild(title);
+  if (summaryInfo.meta) {
+    const meta = document.createElement('span');
+    meta.className = 'technical-summary-meta';
+    meta.textContent = summaryInfo.meta;
+    summary.appendChild(meta);
+  }
+  details.appendChild(summary);
+
+  const pre = document.createElement('pre');
+  pre.className = 'technical-pre';
+  pre.textContent = text;
+  details.appendChild(pre);
+  details.addEventListener('toggle', () => scrollToBottom());
+
+  div.appendChild(details);
+  el.messages.appendChild(div);
+  scrollToBottom();
+  return div;
+}
 function addMessage(cls, label, body, { pre = false, meta = null, markdown = false, copyText = null } = {}) {
   const div = document.createElement('div');
   div.className = `msg ${cls}`;
@@ -1208,8 +1319,9 @@ function renderAgentMessage(msg) {
             copyText: () => block.text,
           });
         } else if (block.type === 'tool_use') {
-          addMessage('msg-tool', labelWithProvider(`araç: ${block.name}`, provider), stringify(block.input), {
-            pre: true,
+          const text = stringify(block.input);
+          addTechnicalMessage('msg-tool', labelWithProvider(`araç: ${block.name}`, provider), text, {
+            copyText: () => text,
           });
         } else if (block.type === 'thinking' && block.thinking) {
           if (consumeStreamedText(block.thinking, 'thinking')) continue;
@@ -1233,9 +1345,9 @@ function renderAgentMessage(msg) {
             text = stringify(text);
           }
           const label = block.is_error ? 'araç sonucu (hata)' : 'araç sonucu';
-          addMessage('msg-toolresult', labelWithProvider(label, provider), text, {
-            pre: true,
+          addTechnicalMessage('msg-toolresult', labelWithProvider(label, provider), text, {
             copyText: () => text,
+            open: Boolean(block.is_error),
           });
         }
       }

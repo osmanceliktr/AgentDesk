@@ -6,6 +6,7 @@
 const store = require('./store');
 const { withBridgeContext } = require('./contextBridgeBuilder');
 const { buildClaudeEnv, buildCodexEnv } = require('./providerEnv');
+const { resolveClaudeExecutable, resolveCodexNativePackage } = require('./nativeBinaries');
 
 let activeAbortController = null;
 let activeQuery = null;
@@ -227,6 +228,7 @@ async function runClaude({ prompt, cwd, resumeSessionId, bridgeContext, onMessag
   };
 
   const effort = settings.effort || undefined;
+  const claudeExecutable = resolveClaudeExecutable();
   const options = {
     cwd,
     model: settings.model || 'claude-opus-4-5',
@@ -240,6 +242,7 @@ async function runClaude({ prompt, cwd, resumeSessionId, bridgeContext, onMessag
     ...(resumeSessionId ? { resume: resumeSessionId } : {}),
     executable: process.execPath,
     executableArgs: [],
+    ...(claudeExecutable ? { pathToClaudeCodeExecutable: claudeExecutable } : {}),
     env: buildClaudeEnv(apiKey),
     stderr: (data) => console.error('[claude-agent-sdk stderr]', String(data).trim()),
   };
@@ -266,7 +269,11 @@ async function runCodex({ prompt, cwd, resumeThreadId, bridgeContext, onMessage 
   const permission = mapCodexPermissions(settings.permissionMode || 'plan');
   const model = (settings.codexModel || '').trim() || undefined;
   const effort = (settings.codexEffort || '').trim() || undefined;
-  const codex = new Codex({ env: buildCodexEnv() });
+  const codexNative = resolveCodexNativePackage();
+  const codex = new Codex({
+    env: buildCodexEnv(codexNative ? codexNative.pathDirs : []),
+    ...(codexNative ? { codexPathOverride: codexNative.executablePath } : {}),
+  });
   const threadOptions = {
     ...permission,
     ...(model ? { model } : {}),

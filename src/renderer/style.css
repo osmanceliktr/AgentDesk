@@ -1,4 +1,4 @@
-﻿/* ---------------------------------------------------------------------------
+/* ---------------------------------------------------------------------------
    Tema sistemi
    ---------------------------------------------------------------------------
    Tum renkler asagidaki token'lardan gelir; stil kurallarinda sabit renk YOKTUR.
@@ -660,6 +660,65 @@ body {
   color: var(--text-faint);
 }
 
+.msg-technical {
+  padding-bottom: 8px;
+}
+
+.technical-details {
+  margin-top: 2px;
+}
+
+.technical-summary {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 100%;
+  color: var(--accent);
+  cursor: pointer;
+  list-style: none;
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+.technical-summary::-webkit-details-marker {
+  display: none;
+}
+
+.technical-summary::before {
+  content: '›';
+  flex: 0 0 auto;
+  color: var(--text-faint);
+  font-size: 14px;
+  transition: transform 0.12s ease;
+}
+
+.technical-details[open] .technical-summary::before {
+  transform: rotate(90deg);
+}
+
+.technical-summary:hover .technical-summary-title {
+  text-decoration: underline;
+}
+
+.technical-summary-title {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.technical-summary-meta {
+  flex: 0 0 auto;
+  color: var(--text-faint);
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+.msg pre.technical-pre {
+  margin-top: 8px;
+  max-height: 320px;
+  white-space: pre;
+}
 .msg-system {
   border: 1px dashed var(--border);
   background: transparent;

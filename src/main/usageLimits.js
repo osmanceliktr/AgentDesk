@@ -6,13 +6,12 @@
 // İki tarafta da kullanılan hesap oturumu (subscription) gereklidir; API anahtarı ile
 // çalışan oturumlarda plan limiti kavramı yoktur.
 
-const fs = require('fs');
-const path = require('path');
 const { spawn } = require('child_process');
 
 const store = require('./store');
 const { buildCodexEnv } = require('./providerEnv');
 const { withIdleClaudeSession } = require('./claudeSession');
+const { resolveCodexNativePackage } = require('./nativeBinaries');
 
 const CLAUDE_TIMEOUT_MS = 30000;
 const CODEX_TIMEOUT_MS = 20000;
@@ -26,14 +25,6 @@ const CLAUDE_WINDOW_LABELS = {
   seven_day_overage_included: 'Haftalık (ek kullanım dahil)',
 };
 
-const CODEX_PLATFORM_PACKAGES = {
-  'win32:x64': ['@openai/codex-win32-x64', 'x86_64-pc-windows-msvc'],
-  'win32:arm64': ['@openai/codex-win32-arm64', 'aarch64-pc-windows-msvc'],
-  'darwin:x64': ['@openai/codex-darwin-x64', 'x86_64-apple-darwin'],
-  'darwin:arm64': ['@openai/codex-darwin-arm64', 'aarch64-apple-darwin'],
-  'linux:x64': ['@openai/codex-linux-x64', 'x86_64-unknown-linux-musl'],
-  'linux:arm64': ['@openai/codex-linux-arm64', 'aarch64-unknown-linux-musl'],
-};
 
 function clampPercent(value) {
   if (typeof value !== 'number' || !Number.isFinite(value)) return null;
@@ -157,28 +148,6 @@ function normalizeClaudeError(err) {
 
 // --- Codex ---
 
-function resolveCodexBinary() {
-  const entry = CODEX_PLATFORM_PACKAGES[`${process.platform}:${process.arch}`];
-  if (!entry) return null;
-  const [pkg, triple] = entry;
-  const exe = process.platform === 'win32' ? 'codex.exe' : 'codex';
-
-  try {
-    const pkgRoot = path.dirname(require.resolve(`${pkg}/package.json`));
-    const candidates = [pkgRoot];
-    if (pkgRoot.includes('app.asar')) {
-      candidates.push(pkgRoot.replace(/app\.asar([\\/])/, 'app.asar.unpacked$1'));
-    }
-    for (const root of candidates) {
-      const binary = path.join(root, 'vendor', triple, 'bin', exe);
-      if (fs.existsSync(binary)) return binary;
-    }
-  } catch {
-    // paket bulunamadı
-  }
-  return null;
-}
-
 function codexWindowLabel(minutes) {
   if (typeof minutes !== 'number' || !Number.isFinite(minutes) || minutes <= 0) return 'Kullanım penceresi';
   if (minutes % 10080 === 0) {
@@ -232,14 +201,14 @@ function mapCodexRateLimits(result) {
   return { windows, plan, notes: [...new Set(notes)] };
 }
 
-function requestCodexRateLimits(binary) {
+function requestCodexRateLimits(nativePackage) {
   return new Promise((resolve, reject) => {
     let child;
     try {
-      child = spawn(binary, ['app-server'], {
+      child = spawn(nativePackage.executablePath, ['app-server'], {
         stdio: ['pipe', 'pipe', 'pipe'],
         windowsHide: true,
-        env: buildCodexEnv(),
+        env: buildCodexEnv(nativePackage.pathDirs),
       });
     } catch (err) {
       reject(err);
@@ -330,8 +299,8 @@ function requestCodexRateLimits(binary) {
 }
 
 async function readCodexUsage() {
-  const binary = resolveCodexBinary();
-  if (!binary) {
+  const nativePackage = resolveCodexNativePackage();
+  if (!nativePackage) {
     return {
       label: 'Codex',
       ok: false,
@@ -344,7 +313,7 @@ async function readCodexUsage() {
   }
 
   try {
-    const result = await requestCodexRateLimits(binary);
+    const result = await requestCodexRateLimits(nativePackage);
     const { windows, plan, notes } = mapCodexRateLimits(result);
     return {
       label: 'Codex',

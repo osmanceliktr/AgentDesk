@@ -10,6 +10,7 @@ const os = require('os');
 
 const store = require('./store');
 const { buildClaudeEnv } = require('./providerEnv');
+const { resolveClaudeExecutable } = require('./nativeBinaries');
 
 const DEFAULT_TIMEOUT_MS = 30000;
 
@@ -61,6 +62,7 @@ async function withIdleClaudeSession(fn, options = {}) {
 
   try {
     const { query } = await import('@anthropic-ai/claude-agent-sdk');
+    const claudeExecutable = resolveClaudeExecutable();
     const q = query({
       prompt: idlePrompt(),
       options: {
@@ -72,6 +74,7 @@ async function withIdleClaudeSession(fn, options = {}) {
         includePartialMessages: false,
         executable: process.execPath,
         executableArgs: [],
+        ...(claudeExecutable ? { pathToClaudeCodeExecutable: claudeExecutable } : {}),
         env: buildClaudeEnv(store.getApiKey()),
         stderr: (data) => console.error(`[${label} stderr]`, String(data).trim()),
       },
